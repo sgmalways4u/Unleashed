@@ -32,8 +32,11 @@
 		</div>
 		<h1>List of All Repositories</h1>
 		<div id="my-github-projects"></div>
+		
 	</div>
 		<script>
+			
+		
 		//function to get list of repositories from github
 		$.githubUser = function(username, callback) {
 			$.getJSON('https://api.github.com/users/'+username+'/repos?callback=?',callback)
@@ -104,19 +107,25 @@
 		
 		function loadDetails(no, projectName){
 			$("#details"+no).loadRepositoriesDetails($('input[name="username"]').val(), projectName);
-			//charts
+			// display charts
 			$.githubRepositoryChart($('input[name="username"]').val(), projectName, function(data) {
 				var repos = data.data; // JSON Parsing
-				
+				var data_str = JSON.stringify(data.data).replace("{", "").replace("}","").split(",");
+				var data1 = "[";
+				for (var i=0; i<data_str.length; i++){
+					var dataSplit = data_str[i].split(':');
+					data1 += "["+dataSplit[0]+", "+dataSplit[1]+"],";
+				}
+				var data2 = data1.substr(0, data1.length-1)+"]";
+				//console.log(data2);
 				var options = {
-					chart: {
+				chart: {
 						renderTo: 'charts'+no,
 						type: 'pie'
 					},
-					series: [{data: [  ['Firefox',   45.0],    ['IE',       26.8]]}]
+					series: [{}]
 				};
-				//options.series[0].data = "[  {'Firefox',   45.0},    {'IE',       26.8}]";
-                
+				options.series[0].data = JSON.parse(data2);
 				var chart = new Highcharts.Chart(options);
 				
 			}); 
@@ -124,6 +133,8 @@
 
 			return false;
 		}
+		
+		//Click function to load repositories based on username
 		$("#submitUsername").click(function(){
 			$("#my-github-projects").loadRepositories($('input[name="username"]').val());
 			return false;
