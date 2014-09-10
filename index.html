@@ -1,8 +1,135 @@
-<html>
-<head>
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Unleashed Test</title>
+		<meta name="resource-type" content="document" />
+		<meta name="robots" content="noindex, nofollow"/>
+		<!-- JQuery CDN -->
+		<script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+		<!-- High Charts Library -->
+		<script src="http://code.highcharts.com/highcharts.js"></script>
+		<script src="http://code.highcharts.com/modules/exporting.js"></script>
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+		<!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+		<!--[if lt IE 9]>
+		  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+		<style>
+			body, html{ margin:10px; }
+		</style>
+	</head>
+	<body>
+	<div class="container">
+		<div class="row">
+			<div class="col-xs-12">
+				<form  class="form-inline">
+				Github Username: 
+				<input type="text" name="username" class="form-control" placeholder="Enter Username" />
+				<button type="submit" class="btn btn-success" id="submitUsername">Submit!</button>
+				</form>
+			</div>
+		</div>
+		<h1>List of All Repositories</h1>
+		<div id="my-github-projects"></div>
+	</div>
+		<script>
+		//function to get list of repositories from github
+		$.githubUser = function(username, callback) {
+			$.getJSON('https://api.github.com/users/'+username+'/repos?callback=?',callback)
+		}
+		//function to get contents for each repositories from github
+		$.githubRepositoryDetails = function(username, projectName, callback) {
+			$.getJSON('https://api.github.com/repos/'+username+'/'+projectName+'/contents?callback=?',callback)
+		}
+		//function to get languages used for each repositories from github
+		$.githubRepositoryChart = function(username, projectName, callback) {
+			$.getJSON('https://api.github.com/repos/'+username+'/'+projectName+'/languages?callback=?',callback)
+		}
+		//function for display list of repositories 
+		$.fn.loadRepositories = function(username) {
+			this.html("<span>Querying GitHub for " + username +"'s repositories...</span>");
+     
+			var target = this;
+			$.githubUser(username, function(data) {
+				var repos = data.data; // JSON Parsing
+				sortByName(repos);	
+     
+				var list = $('<table/>').addClass("table table-bordered");
+				target.empty().append(list);
+				list.append('<tr><th>Project Name</th><th>Description</th><th>Other Details</th><th>Link</th></tr>');
+				var i=0;
+				$(repos).each(function() {
+					if (this.name != (username.toLowerCase()+'.github.com')) {
+						var listValue = '<tr>';
+						listValue += '<td><a style="cursor:pointer;" onclick="loadDetails('+i+', \''+this.name+'\');">' + this.name + '</a> <em>'+(this.language?('('+this.language+')'):'')+'</em></td>';
+						listValue += '<td>' + this.description +'</td>';
+						listValue += '<td><em>Size: '+(this.size<1000?(this.size+' kB'):(Math.round((this.size/1000)*100)/100+' MB'))+' - Watchers: '+this.watchers+' - Forks: '+this.forks+' </em></td>';
+						listValue += '<td><a target="_blank" href="'+ (this.homepage?this.homepage:this.html_url) +'">' + this.name + '</a> <em>'+(this.language?('('+this.language+')'):'')+'</em></td>';
+						listValue += '</tr><tr><td colspan="4"><div id="details'+i+'"></div><div id="charts'+i+'"></div>"</td>';
+						list.append(listValue);
+						i++;
+					}
+				});		
+			});
+		
+			function sortByName(repos) {
+				repos.sort(function(a,b) {
+				  return a.name - b.name;
+				});
+			}
+		};
+		//function for display contents of each repositories 
+		$.fn.loadRepositoriesDetails = function(username, projectName) {
+			this.html("<span>Loading " + projectName +" project...</span>");
+		
+			var target = this;
+			$.githubRepositoryDetails(username, projectName, function(data) {
+				var repos = data.data; // JSON Parsing
+     
+				var list = $('<table/>').addClass("table table-bordered");
+				target.empty().append(list);
+				list.append('<tr><th>File Name</th><th>Link</th></tr>');
+				$(repos).each(function() {
+					if (this.name != (username.toLowerCase()+'.github.com')) {
+						var listValue = '<tr>';
+						listValue += '<td>' + this.name + '</td>';
+						listValue += '<td><a href="'+ (this.html_url) +'">' + this.html_url + '</a></td>';
+						listValue += '</tr>';
+						list.append(listValue);
+					}
+				});		
+			});
+		};
+		
+		function loadDetails(no, projectName){
+			$("#details"+no).loadRepositoriesDetails($('input[name="username"]').val(), projectName);
+			//charts
+			$.githubRepositoryChart($('input[name="username"]').val(), projectName, function(data) {
+				var repos = data.data; // JSON Parsing
+				
+				var options = {
+					chart: {
+						renderTo: 'charts'+no,
+						type: 'pie'
+					},
+					series: [{data: [  ['Firefox',   45.0],    ['IE',       26.8]]}]
+				};
+				//options.series[0].data = "[  {'Firefox',   45.0},    {'IE',       26.8}]";
+                
+				var chart = new Highcharts.Chart(options);
+				
+			}); 
+			
 
-</head>
-<body>
-
-</body>
+			return false;
+		}
+		$("#submitUsername").click(function(){
+			$("#my-github-projects").loadRepositories($('input[name="username"]').val());
+			return false;
+		});
+		</script>
+		
+		<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	</body>
 </html>
